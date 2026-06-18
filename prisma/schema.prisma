@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  customer
+  installer
+  admin
+}
+
+enum InstallerTier {
+  basic
+  silver
+  gold
+}
+
+enum RoofType {
+  flat
+  tile
+  linter
+  izhar_concrete
+}
+
+enum SystemType {
+  ongrid
+  hybrid
+}
+
+enum StructureType {
+  ground_mounted
+  elevated
+}
+
+enum PropertyType {
+  residential
+  commercial
+  industrial
+}
+
+enum OwnershipStatus {
+  own
+  rental
+}
+
+enum ShadingLevel {
+  no_shade
+  partial_shade
+  heavy_shade
+}
+
+enum ElectricityProvider {
+  lesco
+  iesco
+  other
+}
+
+enum InterestReason {
+  reduce_bill
+  backup_required
+  environmental
+}
+
+enum InstallationTimeline {
+  immediate
+  within_week
+  within_month
+  just_researching
+}
+
+enum RequestStatus {
+  open
+  bidding
+  selected
+  booked
+  completed
+  cancelled
+}
+
+enum BidStatus {
+  pending
+  accepted
+  rejected
+  withdrawn
+}
+
+enum BookingStatus {
+  pending_deposit
+  active
+  milestone_1
+  milestone_2
+  completed
+  disputed
+  cancelled
+}
+
+enum MilestoneStatus {
+  pending
+  held
+  released
+  refunded
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  customerProfile  CustomerProfile?
+  installerProfile InstallerProfile?
+  requests         CustomerRequest[] @relation("CustomerRequests")
+  ratingsGiven     Rating[]          @relation("RatingsGiven")
+
+  @@map("users")
+}
+
+model CustomerProfile {
+  id        String  @id @default(uuid())
+  userId    String  @unique @map("user_id")
+  fullName  String  @map("full_name")
+  address   String?
+  latitude  Float?
+  longitude Float?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("customer_profiles")
+}
+
+model InstallerProfile {
+  id                String        @id @default(uuid())
+  userId            String        @unique @map("user_id")
+  businessName      String        @map("business_name")
+  licenseNumber     String?       @map("license_number")
+  licenseDocUrl     String?       @map("license_doc_url")
+  insuranceDocUrl   String?       @map("insurance_doc_url")
+  tier              InstallerTier @default(basic)
+  tierVerifiedAt    DateTime?     @map("tier_verified_at")
+  perWattBaseRate   Decimal       @default(18) @map("per_watt_base_rate")
+  serviceRadiusKm   Int           @default(50) @map("service_radius_km")
+  latitude          Float?
+  longitude         Float?
+  addressText       String?       @map("address_text")
+  isAvailable       Boolean       @default(true) @map("is_available")
+  isVerified        Boolean       @default(false) @map("is_verified")
+  totalJobs         Int           @default(0) @map("total_jobs")
+  avgRating         Decimal       @default(0) @map("avg_rating")
+  responseTimeAvgH  Decimal       @default(24) @map("response_time_avg_h")
+  jazzcashAccount   String?       @map("jazzcash_account")
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bids     Bid[]
+  bookings Booking[] @relation("InstallerBookings")
+  ratings  Rating[]  @relation("InstallerRatings")
+
+  @@map("installer_profiles")
+}
+
+model SolarPackage {
+  id            String  @id @default(uuid())
+  name          String
+  systemSizeKw  Decimal @map("system_size_kw")
+  panelCount    Int     @map("panel_count")
+  panelModel    String  @map("panel_model")
+  inverterModel String  @map("inverter_model")
+  batteryModel  String? @map("battery_model")
+  description   String?
+  priceMinPkr   Decimal @map("price_min_pkr")
+  priceMaxPkr   Decimal @map("price_max_pkr")
+  isActive      Boolean @default(true) @map("is_active")
+
+  requests CustomerRequest[]
+
+  @@map("solar_packages")
+}
+
+model CustomerRequest {
+  id                   String               @id @default(uuid())
+  customerId           String               @map("customer_id")
+  packageId            String?              @map("package_id")
+  firstName            String               @map("first_name")
+  lastName             String               @map("last_name")
+  phoneNumber          String               @map("phone_number")
+  systemSizeKw         Decimal              @map("system_size_kw")
+  systemType           SystemType           @map("system_type")
+  structureType        StructureType        @map("structure_type")
+  totalAreaMarla       Decimal              @map("total_area_marla")
+  buildingHeightFt     Decimal              @map("building_height_ft")
+  propertyType         PropertyType         @map("property_type")
+  transformerCapacity  String?              @map("transformer_capacity")
+  ownershipStatus      OwnershipStatus      @map("ownership_status")
+  sanctionedLoadKw     Decimal              @map("sanctioned_load_kw")
+  roofType             RoofType             @map("roof_type")
+  shadingOnRoof        ShadingLevel         @map("shading_on_roof")
+  electricityProvider  ElectricityProvider  @map("electricity_provider")
+  currentElectricityBill Decimal            @map("current_electricity_bill")
+  interestReason       InterestReason       @map("interest_reason")
+  installationTimeline InstallationTimeline @map("installation_timeline")
+  latitude             Float
+  longitude            Float
+  address              String
+  city                 String               @default("Lahore")
+  notes                String?
+  budgetMin            Decimal?             @map("budget_min")
+  budgetMax            Decimal?             @map("budget_max")
+  status               RequestStatus        @default(open)
+  bidDeadline          DateTime             @map("bid_deadline")
+  selectedBidId        String?              @map("selected_bid_id")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  expiresAt            DateTime             @map("expires_at")
+
+  customer User          @relation("CustomerRequests", fields: [customerId], references: [id])
+  package  SolarPackage? @relation(fields: [packageId], references: [id])
+  bids     Bid[]
+  booking  Booking?
+
+  @@map("customer_requests")
+}
+
+model Bid {
+  id                    String    @id @default(uuid())
+  requestId             String    @map("request_id")
+  installerId           String    @map("installer_id")
+  perWattRate           Decimal   @map("per_watt_rate")
+  totalPrice            Decimal   @map("total_price")
+  warrantyWorkmanshipYr Int       @map("warranty_workmanship_yr")
+  estimatedDays         Int       @map("estimated_days")
+  message               String?
+  responseTimeHours     Decimal   @map("response_time_hours")
+  bestValueScore        Decimal   @map("best_value_score")
+  status                BidStatus @default(pending)
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  request   CustomerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  installer InstallerProfile @relation(fields: [installerId], references: [id])
+  booking   Booking?
+
+  @@map("bids")
+}
+
+model Booking {
+  id                  String        @id @default(uuid())
+  requestId           String        @unique @map("request_id")
+  bidId               String        @unique @map("bid_id")
+  customerId          String        @map("customer_id")
+  installerId         String        @map("installer_id")
+  totalAmount         Decimal       @map("total_amount")
+  platformCommission  Decimal       @map("platform_commission")
+  installerPayout     Decimal       @map("installer_payout")
+  status              BookingStatus @default(pending_deposit)
+  depositPaidAt       DateTime?     @map("deposit_paid_at")
+  completedAt         DateTime?     @map("completed_at")
+  createdAt           DateTime      @default(now()) @map("created_at")
+
+  request              CustomerRequest      @relation(fields: [requestId], references: [id])
+  bid                  Bid                  @relation(fields: [bidId], references: [id])
+  installer            InstallerProfile     @relation("InstallerBookings", fields: [installerId], references: [id])
+  milestones           PaymentMilestone[]
+  installationRecord   InstallationRecord?
+  rating               Rating?
+
+  @@map("bookings")
+}
+
+model PaymentMilestone {
+  id         String          @id @default(uuid())
+  bookingId  String          @map("booking_id")
+  name       String
+  percentage Decimal        
+  amount     Decimal        
+  status     MilestoneStatus @default(pending)
+  paymentRef String?         @map("payment_ref")
+  releasedAt DateTime?       @map("released_at")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("payment_milestones")
+}
+
+model InstallationRecord {
+  id                  String   @id @default(uuid())
+  bookingId           String   @unique @map("booking_id")
+  systemSizeKw        Decimal  @map("system_size_kw")
+  panelSerials        Json     @map("panel_serials")
+  inverterSerial      String   @map("inverter_serial")
+  designDocUrl        String?  @map("design_doc_url")
+  completionPhotoUrls Json?    @map("completion_photo_urls")
+  inspectionDate      DateTime? @map("inspection_date")
+  warrantyStart       DateTime? @map("warranty_start")
+  warrantyEnd         DateTime? @map("warranty_end")
+  verifiedByAdmin     Boolean  @default(false) @map("verified_by_admin")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("installation_records")
+}
+
+model Rating {
+  id         String   @id @default(uuid())
+  bookingId  String   @unique @map("booking_id")
+  reviewerId String   @map("reviewer_id")
+  installerId String  @map("installer_id")
+  score      Int
+  comment    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  booking   Booking          @relation(fields: [bookingId], references: [id])
+  reviewer  User             @relation("RatingsGiven", fields: [reviewerId], references: [id])
+  installer InstallerProfile @relation("InstallerRatings", fields: [installerId], references: [id])
+
+  @@map("ratings")
+}
