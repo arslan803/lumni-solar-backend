@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-echo "Running database migrations..."
-npx prisma migrate deploy
+echo "Pushing database schema..."
+npx prisma db push --accept-data-loss
 echo "Starting Lumni API..."
 exec node dist/main.js
