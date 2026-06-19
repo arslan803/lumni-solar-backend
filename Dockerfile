@@ -1,6 +1,10 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+ARG CACHEBUST=1
 COPY prisma ./prisma/
 RUN npm ci --legacy-peer-deps
 COPY . .
