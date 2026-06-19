@@ -9,7 +9,10 @@ export class AdminService {
   async getPendingInstallers() {
     return this.prisma.installerProfile.findMany({
       where: { isVerified: false },
-      include: { user: { select: { email: true, phone: true, createdAt: true } } },
+      include: {
+        user: { select: { email: true, phone: true, createdAt: true } },
+        gallery: { take: 3 },
+      },
       orderBy: { createdAt: 'asc' },
     });
   }
@@ -17,11 +20,14 @@ export class AdminService {
   async verifyInstaller(installerId: string, tier: InstallerTier) {
     return this.prisma.installerProfile.update({
       where: { id: installerId },
-      data: {
-        isVerified: true,
-        tier,
-        tierVerifiedAt: new Date(),
-      },
+      data: { isVerified: true, tier, tierVerifiedAt: new Date() },
+    });
+  }
+
+  async verifyCnic(installerId: string) {
+    return this.prisma.installerProfile.update({
+      where: { id: installerId },
+      data: { cnicVerified: true },
     });
   }
 
@@ -32,13 +38,11 @@ export class AdminService {
       this.prisma.installerProfile.count({ where: { isVerified: true } }),
       this.prisma.bid.count(),
     ]);
-
     const completedBookings = await this.prisma.booking.findMany({
       where: { status: 'completed' },
       select: { totalAmount: true },
     });
     const gmv = completedBookings.reduce((sum, b) => sum + Number(b.totalAmount), 0);
-
     return {
       totalRequests: requests,
       totalBookings: bookings,

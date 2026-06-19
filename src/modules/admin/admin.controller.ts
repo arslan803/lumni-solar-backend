@@ -27,6 +27,11 @@ export class AdminController {
     return this.admin.verifyInstaller(id, tier || 'basic');
   }
 
+  @Patch('installers/:id/verify-cnic')
+  verifyCnic(@Param('id') id: string) {
+    return this.admin.verifyCnic(id);
+  }
+
   @Get('dashboard/metrics')
   metrics() {
     return this.admin.getMetrics();

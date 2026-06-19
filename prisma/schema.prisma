@@ -136,33 +136,63 @@ model CustomerProfile {
 }
 
 model InstallerProfile {
-  id                String        @id @default(uuid())
-  userId            String        @unique @map("user_id")
-  businessName      String        @map("business_name")
-  licenseNumber     String?       @map("license_number")
-  licenseDocUrl     String?       @map("license_doc_url")
-  insuranceDocUrl   String?       @map("insurance_doc_url")
-  tier              InstallerTier @default(basic)
-  tierVerifiedAt    DateTime?     @map("tier_verified_at")
-  perWattBaseRate   Decimal       @default(18) @map("per_watt_base_rate")
-  serviceRadiusKm   Int           @default(50) @map("service_radius_km")
-  latitude          Float?
-  longitude         Float?
-  addressText       String?       @map("address_text")
-  isAvailable       Boolean       @default(true) @map("is_available")
-  isVerified        Boolean       @default(false) @map("is_verified")
-  totalJobs         Int           @default(0) @map("total_jobs")
-  avgRating         Decimal       @default(0) @map("avg_rating")
-  responseTimeAvgH  Decimal       @default(24) @map("response_time_avg_h")
-  jazzcashAccount   String?       @map("jazzcash_account")
-  createdAt         DateTime      @default(now()) @map("created_at")
+  id                     String        @id @default(uuid())
+  userId                 String        @unique @map("user_id")
+  businessName           String        @map("business_name")
+  licenseNumber          String?       @map("license_number")
+  licenseDocUrl          String?       @map("license_doc_url")
+  insuranceDocUrl        String?       @map("insurance_doc_url")
+  tier                   InstallerTier @default(basic)
+  tierVerifiedAt         DateTime?     @map("tier_verified_at")
+  perWattBaseRate        Decimal       @default(18) @map("per_watt_base_rate")
+  serviceRadiusKm        Int           @default(50) @map("service_radius_km")
+  latitude               Float?
+  longitude              Float?
+  addressText            String?       @map("address_text")
+  isAvailable            Boolean       @default(true) @map("is_available")
+  isVerified             Boolean       @default(false) @map("is_verified")
+  totalJobs              Int           @default(0) @map("total_jobs")
+  avgRating              Decimal       @default(0) @map("avg_rating")
+  responseTimeAvgH       Decimal       @default(24) @map("response_time_avg_h")
+  jazzcashAccount        String?       @map("jazzcash_account")
+  createdAt              DateTime      @default(now()) @map("created_at")
 
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Enhanced profile fields (public)
+  fullName               String?       @map("full_name")
+  profilePhotoUrl        String?       @map("profile_photo_url")
+  cnicVerified           Boolean       @default(false) @map("cnic_verified")
+  yearsExperience        Int?          @map("years_experience")
+  projectsCompleted      Int?          @map("projects_completed")
+  specializations        Json?
+  serviceAreas           Json?         @map("service_areas")
+  trainingCertificateUrl String?       @map("training_certificate_url")
+
+  // Private fields — never exposed to customer-role API responses
+  cnicNumber             String?       @map("cnic_number")
+  phonePrivate           String?       @map("phone_private")
+  whatsappNumber         String?       @map("whatsapp_number")
+  companyName            String?       @map("company_name")
+  fullAddress            String?       @map("full_address")
+
+  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   bids     Bid[]
-  bookings Booking[] @relation("InstallerBookings")
-  ratings  Rating[]  @relation("InstallerRatings")
+  bookings Booking[]          @relation("InstallerBookings")
+  ratings  Rating[]           @relation("InstallerRatings")
+  gallery  InstallerGallery[]
 
   @@map("installer_profiles")
+}
+
+model InstallerGallery {
+  id                 String           @id @default(uuid())
+  installerProfileId String           @map("installer_profile_id")
+  photoUrl           String           @map("photo_url")
+  caption            String?
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  installerProfile InstallerProfile @relation(fields: [installerProfileId], references: [id], onDelete: Cascade)
+
+  @@map("installer_gallery")
 }
 
 model SolarPackage {
