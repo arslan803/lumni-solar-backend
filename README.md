@@ -52,4 +52,5 @@ docker build -t lumni-api .
 |------|-------|----------|
 | Admin | admin@lumni.pk | admin123 |
 | Customer | customer@lumni.pk | customer123 |
+
 | Installer | installer@lumni.pk | installer123 |
