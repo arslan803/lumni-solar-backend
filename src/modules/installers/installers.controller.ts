@@ -98,7 +98,7 @@ export class InstallersController {
 
   @Get('public/:id')
   @Roles('customer', 'installer', 'admin')
-  getPublicProfile(@Param('id') id: string) {
-    return this.installers.getPublicProfile(id);
+  getPublicProfile(@Param('id') id: string, @Req() req: any) {
+    return this.installers.getPublicProfile(id, req.user?.role);
   }
 }

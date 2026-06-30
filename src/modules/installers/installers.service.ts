@@ -135,7 +135,7 @@ export class InstallersService {
     return { deleted: true };
   }
 
-  async getPublicProfile(profileId: string) {
+  async getPublicProfile(profileId: string, requesterRole?: string) {
     const profile = await this.prisma.installerProfile.findUnique({
       where: { id: profileId },
       include: {
@@ -153,6 +153,14 @@ export class InstallersService {
       },
     });
     if (!profile) throw new NotFoundException('Installer not found');
+    // Admins see all private fields; customers/installers get them stripped
+    if (requesterRole === 'admin') {
+      const copy: any = { ...profile };
+      if (profile.cnicVerified && profile.cnicNumber) {
+        copy.cnicMasked = maskCnic(profile.cnicNumber);
+      }
+      return copy;
+    }
     return stripPrivate(profile);
   }
 
