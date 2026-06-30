@@ -1,9 +1,13 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MinLength, Matches } from 'class-validator';
 import { UserRole } from '@prisma/client';
 
 export class RegisterDto {
-  @IsEmail()
-  email: string;
+  @IsString()
+  @Matches(/^03\d{9}$/, { message: 'Phone must be a valid Pakistani mobile number (03XXXXXXXXX)' })
+  phone: string;
+
+  @IsString()
+  name: string;
 
   @IsString()
   @MinLength(6)
@@ -14,20 +18,13 @@ export class RegisterDto {
 
   @IsOptional()
   @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsString()
-  fullName?: string;
-
-  @IsOptional()
-  @IsString()
   businessName?: string;
 }
 
 export class LoginDto {
-  @IsEmail()
-  email: string;
+  @IsString()
+  @Matches(/^03\d{9}$/, { message: 'Phone must be a valid Pakistani mobile number (03XXXXXXXXX)' })
+  phone: string;
 
   @IsString()
   password: string;

@@ -107,8 +107,9 @@ enum MilestoneStatus {
 
 model User {
   id           String   @id @default(uuid())
-  email        String   @unique
-  phone        String?  @unique
+  phone        String   @unique
+  email        String?  @unique
+  name         String?
   passwordHash String   @map("password_hash")
   role         UserRole
   isActive     Boolean  @default(true) @map("is_active")

@@ -4,27 +4,31 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash('admin123', 10);
-  const customerHash = await bcrypt.hash('customer123', 10);
-  const installerHash = await bcrypt.hash('installer123', 10);
+  console.log('🌱 Seeding database...');
 
+  // ── Admin ────────────────────────────────────────────────────────────────────
+  const adminPhone = '03340008861';
+  const adminHash = await bcrypt.hash('12345', 10);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@lumni.pk' },
-    update: {},
+    where: { phone: adminPhone },
+    update: { passwordHash: adminHash, name: 'Admin', role: 'admin' },
     create: {
-      email: 'admin@lumni.pk',
-      phone: '+923001000001',
-      passwordHash,
+      phone: adminPhone,
+      name: 'Admin',
+      passwordHash: adminHash,
       role: 'admin',
     },
   });
+  console.log('✅ Admin:', admin.phone);
 
+  // ── Demo customer ─────────────────────────────────────────────────────────────
+  const customerHash = await bcrypt.hash('customer123', 10);
   const customer = await prisma.user.upsert({
-    where: { email: 'customer@lumni.pk' },
+    where: { phone: '03001000002' },
     update: {},
     create: {
-      email: 'customer@lumni.pk',
-      phone: '+923001000002',
+      phone: '03001000002',
+      name: 'Ahmed Khan',
       passwordHash: customerHash,
       role: 'customer',
       customerProfile: {
@@ -37,18 +41,22 @@ async function main() {
       },
     },
   });
+  console.log('✅ Customer:', customer.phone);
 
-  const installerUser = await prisma.user.upsert({
-    where: { email: 'installer@lumni.pk' },
+  // ── Demo installer ────────────────────────────────────────────────────────────
+  const installerHash = await bcrypt.hash('installer123', 10);
+  const installer = await prisma.user.upsert({
+    where: { phone: '03001000003' },
     update: {},
     create: {
-      email: 'installer@lumni.pk',
-      phone: '+923001000003',
+      phone: '03001000003',
+      name: 'SolarPro Lahore',
       passwordHash: installerHash,
       role: 'installer',
       installerProfile: {
         create: {
           businessName: 'SolarPro Lahore',
+          fullName: 'Ali Raza',
           licenseNumber: 'AEDB-LHR-2024-001',
           tier: 'gold',
           tierVerifiedAt: new Date(),
@@ -67,27 +75,22 @@ async function main() {
       },
     },
   });
+  console.log('✅ Installer:', installer.phone);
 
-  const pkg5kw = await prisma.solarPackage.upsert({
-    where: { id: 'pkg-5kw-lahore' },
-    update: {},
-    create: {
+  // ── Solar packages ────────────────────────────────────────────────────────────
+  const packages = [
+    {
       id: 'pkg-5kw-lahore',
       name: '5kW Home Standard',
       systemSizeKw: 5,
       panelCount: 12,
       panelModel: 'Longi 420W Mono PERC',
       inverterModel: 'Huawei 5kW String Inverter',
-      description: 'Ideal for small homes in Lahore. Net metering ready with IESCO.',
+      description: 'Ideal for small homes in Lahore. Net metering ready with LESCO.',
       priceMinPkr: 750000,
       priceMaxPkr: 950000,
     },
-  });
-
-  const pkg10kw = await prisma.solarPackage.upsert({
-    where: { id: 'pkg-10kw-lahore' },
-    update: {},
-    create: {
+    {
       id: 'pkg-10kw-lahore',
       name: '10kW Home Plus',
       systemSizeKw: 10,
@@ -98,12 +101,7 @@ async function main() {
       priceMinPkr: 1400000,
       priceMaxPkr: 1800000,
     },
-  });
-
-  const pkg5kwHybrid = await prisma.solarPackage.upsert({
-    where: { id: 'pkg-5kw-hybrid-lahore' },
-    update: {},
-    create: {
+    {
       id: 'pkg-5kw-hybrid-lahore',
       name: '5kW + Battery Ready',
       systemSizeKw: 5,
@@ -115,21 +113,23 @@ async function main() {
       priceMinPkr: 1100000,
       priceMaxPkr: 1400000,
     },
-  });
+  ];
 
-  console.log('Seed complete:', {
-    admin: admin.email,
-    customer: customer.email,
-    installer: installerUser.email,
-    packages: [pkg5kw.name, pkg10kw.name, pkg5kwHybrid.name],
-  });
+  for (const pkg of packages) {
+    await prisma.solarPackage.upsert({
+      where: { id: pkg.id },
+      update: {},
+      create: pkg,
+    });
+    console.log('✅ Package:', pkg.name);
+  }
+
+  console.log('\n🎉 Seed complete!');
+  console.log('Admin login    → phone: 03340008861  password: 12345');
+  console.log('Customer demo  → phone: 03001000002  password: customer123');
+  console.log('Installer demo → phone: 03001000003  password: installer123');
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch((e) => { console.error(e); process.exit(1); })
+  .finally(async () => { await prisma.$disconnect(); });

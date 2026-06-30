@@ -12,28 +12,31 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (existing) throw new ConflictException('Email already registered');
+    // Check unique phone
+    const existing = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
+    if (existing) throw new ConflictException('Mobile number already registered');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
+
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
         phone: dto.phone,
+        name: dto.name,
         passwordHash,
         role: dto.role,
-        ...(dto.role === 'customer' && dto.fullName
+        ...(dto.role === 'customer'
           ? {
               customerProfile: {
-                create: { fullName: dto.fullName },
+                create: { fullName: dto.name },
               },
             }
           : {}),
-        ...(dto.role === 'installer' && dto.businessName
+        ...(dto.role === 'installer'
           ? {
               installerProfile: {
                 create: {
-                  businessName: dto.businessName,
+                  businessName: dto.businessName || dto.name,
+                  fullName: dto.name,
                   latitude: 31.5204,
                   longitude: 74.3587,
                   addressText: 'Lahore, Pakistan',
@@ -50,13 +53,13 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { phone: dto.phone },
       include: { customerProfile: true, installerProfile: true },
     });
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    if (!user) throw new UnauthorizedException('Invalid mobile number or password');
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!valid) throw new UnauthorizedException('Invalid credentials');
+    if (!valid) throw new UnauthorizedException('Invalid mobile number or password');
 
     return this.buildAuthResponse(user);
   }
@@ -64,7 +67,7 @@ export class AuthService {
   private buildAuthResponse(user: any) {
     const token = this.jwt.sign({
       sub: user.id,
-      email: user.email,
+      phone: user.phone,
       role: user.role,
     });
     const { passwordHash, ...safeUser } = user;
